@@ -9,17 +9,25 @@ import {
 } from "../ui/card";
 // import { Badge } from "lucide-react";
 import { Button } from "../ui/button";
+import { Trash2 } from "lucide-react";
 
-export function ProjectCard({ project }: { project: Project }) {
+export function ProjectCard({
+  project,
+  onDelete,
+}: {
+  project: Project;
+  onDelete: (id: string) => void;
+}) {
   return (
     <Card className="w-full max-w-sm rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-200 dark:border-gray-700">
       <CardHeader className="flex flex-row items-start justify-between pb-2 space-y-0 p-6">
         <CardTitle className="text-xl font-bold text-gray-900 dark:text-white truncate">
           {project.name}
         </CardTitle>
-        {/* <Badge className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
-          {project.status === "active" ? "Ativo" : "Inativo"}
-        </Badge> */}
+        <Trash2
+          className="w-4 h-4 text-red-500 cursor-pointer hover:text-red-600"
+          onClick={() => onDelete(project.id)}
+        />
       </CardHeader>
       <CardContent className="pt-0 px-6">
         <CardDescription className="text-gray-600 dark:text-gray-300 text-sm mb-4 line-clamp-2">

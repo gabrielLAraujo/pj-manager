@@ -30,5 +30,8 @@ export interface WorkDay {
     createdAt: Date
     updatedAt: Date
     config?: ProjectConfig
+    status: ProjectStatus
+    userId: string
   }
   export type TaskStatus = "todo" | "inprogress" | "done"
+  export type ProjectStatus = "active" | "inactive" | "planning" | "completed"

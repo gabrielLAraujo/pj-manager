@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -19,23 +20,58 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { ProjectStatus } from "@/types/types";
+import { CreateProjectInput } from "@/types/api";
+import { Project } from "@/types/types";
 
-export function ProjectForm() {
+interface ProjectFormProps {
+  onSubmit: (projectData: CreateProjectInput) => Promise<void>;
+  onProjectCreated?: (project: Project) => void;
+  loading?: boolean;
+}
+
+export function ProjectForm({
+  onSubmit,
+  onProjectCreated,
+  loading = false,
+}: ProjectFormProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [status, setStatus] = useState("active");
+  const [status, setStatus] = useState<ProjectStatus>("active");
   const [open, setOpen] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    console.log("Projeto criado:", { name, description, status });
+    if (!name.trim()) {
+      alert("Nome do projeto é obrigatório");
+      return;
+    }
 
-    setOpen(false);
-    setName("");
-    setDescription("");
-    setStatus("active");
+    try {
+      const projectData: CreateProjectInput = {
+        name: name.trim(),
+        description: description.trim(),
+        userId: "cmc8ztwio0000j5kyuws1kaa8",
+        status: status,
+      };
+
+      await onSubmit(projectData);
+
+      // Reset form apenas após sucesso
+      setName("");
+      setDescription("");
+      setStatus("active");
+      setOpen(false);
+
+      // Chamar callback se fornecido
+      if (onProjectCreated) {
+        onProjectCreated(projectData as Project);
+      }
+    } catch (error) {
+      console.error("Erro ao criar projeto:", error);
+      alert("Erro ao criar projeto");
+    }
   };
 
   return (
@@ -58,7 +94,7 @@ export function ProjectForm() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Nome do Projeto</Label>
+            <Label htmlFor="name">Nome do Projeto *</Label>
             <Input
               id="name"
               type="text"
@@ -66,6 +102,7 @@ export function ProjectForm() {
               onChange={(e) => setName(e.target.value)}
               placeholder="Digite o nome do projeto"
               required
+              disabled={loading}
             />
           </div>
 
@@ -75,14 +112,19 @@ export function ProjectForm() {
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Descrição do projeto"
+              placeholder="Descrição do projeto (opcional)"
               rows={3}
+              disabled={loading}
             />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="status">Status</Label>
-            <Select value={status} onValueChange={setStatus}>
+            <Select
+              value={status}
+              onValueChange={(value) => setStatus(value as ProjectStatus)}
+              disabled={loading}
+            >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -100,14 +142,16 @@ export function ProjectForm() {
               type="button"
               variant="outline"
               onClick={() => setOpen(false)}
+              disabled={loading}
             >
               Cancelar
             </Button>
             <Button
               type="submit"
+              disabled={loading}
               className="bg-blue-500 text-white hover:bg-blue-600 w-fit"
             >
-              Criar Projeto
+              {loading ? "Criando..." : "Criar Projeto"}
             </Button>
           </div>
         </form>
