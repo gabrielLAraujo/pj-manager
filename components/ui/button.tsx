@@ -1,4 +1,5 @@
 import { ButtonHTMLAttributes, ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?:
@@ -12,13 +13,14 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
 }
 
-export function Button({
+// Função para gerar classes de variantes - usada por outros componentes
+export function buttonVariants({
   variant = "default",
   size = "md",
-  children,
-  className = "",
-  ...props
-}: ButtonProps) {
+}: {
+  variant?: ButtonProps["variant"];
+  size?: ButtonProps["size"];
+} = {}) {
   const baseClasses =
     "inline-flex items-center justify-center font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2";
 
@@ -39,9 +41,19 @@ export function Button({
     lg: "px-6 py-3 text-base",
   };
 
+  return cn(baseClasses, variantClasses[variant], sizeClasses[size]);
+}
+
+export function Button({
+  variant = "default",
+  size = "md",
+  children,
+  className = "",
+  ...props
+}: ButtonProps) {
   return (
     <button
-      className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+      className={cn(buttonVariants({ variant, size }), className)}
       {...props}
     >
       {children}
