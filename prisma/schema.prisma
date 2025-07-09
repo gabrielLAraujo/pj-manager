@@ -61,15 +61,16 @@ model VerificationToken {
 }
 
 model Project {
-  id          String         @id @default(uuid())
-  name        String
-  description String
-  createdAt   DateTime       @default(now()) @map("created_at")
-  updatedAt   DateTime       @updatedAt @map("updated_at")
-  userId      String
-  tasks       Task[]
-  config      ProjectConfig?
-  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String           @id @default(uuid())
+  name           String
+  description    String
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+  userId         String
+  tasks          Task[]
+  config         ProjectConfig?
+  monthlyHistory MonthlyHistory[]
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("projects")
 }
@@ -95,6 +96,43 @@ model Task {
   createdAt   DateTime   @default(now())
   projectId   String
   project     Project    @relation(fields: [projectId], references: [id])
+}
+
+model MonthlyHistory {
+  id         String              @id @default(uuid())
+  projectId  String              @map("project_id")
+  year       Int
+  month      Int
+  totalHours Float               @map("total_hours")
+  totalDays  Int                 @map("total_days")
+  createdAt  DateTime            @default(now()) @map("created_at")
+  updatedAt  DateTime            @updatedAt @map("updated_at")
+  project    Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  records    MonthlyWorkRecord[]
+
+  @@unique([projectId, year, month])
+  @@map("monthly_history")
+}
+
+model MonthlyWorkRecord {
+  id               String         @id @default(uuid())
+  monthlyHistoryId String         @map("monthly_history_id")
+  projectId        String         @map("project_id")
+  year             Int
+  month            Int
+  date             String // formato YYYY-MM-DD
+  dayOfWeek        String         @map("day_of_week")
+  enabled          Boolean
+  start            String?
+  end              String?
+  discountLunch    Boolean        @map("discount_lunch")
+  duration         Int // em minutos
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+  monthlyHistory   MonthlyHistory @relation(fields: [monthlyHistoryId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, date])
+  @@map("monthly_work_records")
 }
 
 enum TaskStatus {

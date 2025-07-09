@@ -21,11 +21,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ProjectStatus } from "@/types/types";
-import { CreateProjectInput } from "@/types/api";
+import { CreateProjectRequest } from "@/types/api";
 import { Project } from "@/types/types";
 
 interface ProjectFormProps {
-  onSubmit: (projectData: CreateProjectInput) => Promise<void>;
+  onSubmit: (projectData: CreateProjectRequest) => Promise<void>;
   onProjectCreated?: (project: Project) => void;
   loading?: boolean;
 }
@@ -49,7 +49,7 @@ export function ProjectForm({
     }
 
     try {
-      const projectData: CreateProjectInput = {
+      const projectData: CreateProjectRequest = {
         name: name.trim(),
         description: description.trim(),
         userId: "cmc8ztwio0000j5kyuws1kaa8",
@@ -58,13 +58,11 @@ export function ProjectForm({
 
       await onSubmit(projectData);
 
-      // Reset form apenas após sucesso
       setName("");
       setDescription("");
       setStatus("active");
       setOpen(false);
 
-      // Chamar callback se fornecido
       if (onProjectCreated) {
         onProjectCreated(projectData as Project);
       }
@@ -77,11 +75,8 @@ export function ProjectForm({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button
-          variant="outline"
-          className="bg-blue-500 text-white hover:bg-blue-600 w-fit"
-        >
-          Novo Projeto
+        <Button variant="default" className="whitespace-nowrap">
+          + Novo Projeto
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
@@ -149,7 +144,7 @@ export function ProjectForm({
             <Button
               type="submit"
               disabled={loading}
-              className="bg-blue-500 text-white hover:bg-blue-600 w-fit"
+              className="bg-blue-500 text-white hover:bg-blue-600"
             >
               {loading ? "Criando..." : "Criar Projeto"}
             </Button>
