@@ -5,6 +5,7 @@ import { ProjectList } from "@/components/project/ProjectList";
 import { ProjectFormModal } from "@/components/project/ProjectFormModal";
 import { SearchInput } from "@/components/ui/search-input";
 import { Header } from "@/components/layout/Header";
+import { AuthDebug } from "@/components/debug/AuthDebug";
 
 export default function DashboardPage() {
   const {
@@ -55,6 +56,7 @@ export default function DashboardPage() {
           />
         </div>
       </div>
+      <AuthDebug />
     </div>
   );
 }

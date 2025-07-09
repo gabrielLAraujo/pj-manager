@@ -26,11 +26,18 @@ export function useProjects(): UseProjectsReturn {
 
   const fetchProjects = useCallback(async (page: number = 1, searchTerm: string = '') => {
     const userId = user && 'id' in user ? user.id as string : null
-    if (!userId || (lastFetchParams.current?.page === page && lastFetchParams.current?.search === searchTerm)) {
+    if (!userId) {
+      console.log('fetchProjects: userId não encontrado, user:', user)
+      return
+    }
+    
+    if (lastFetchParams.current?.page === page && lastFetchParams.current?.search === searchTerm) {
+      console.log('fetchProjects: parâmetros iguais, pulando requisição')
       return
     }
 
     try {
+      console.log('fetchProjects: Iniciando busca', { page, searchTerm, userId })
       setLoading(true)
       setError(null)
       
@@ -42,6 +49,7 @@ export function useProjects(): UseProjectsReturn {
       })
 
       const response = await axios.get<PaginatedProjectsResponse>(`/api/projects?${params}`)
+      console.log('fetchProjects: Resposta recebida', response.data)
       
       setProjects(response.data.projects)
       setPagination(response.data.pagination)
@@ -49,25 +57,27 @@ export function useProjects(): UseProjectsReturn {
       
       lastFetchParams.current = { page, search: searchTerm }
     } catch (error) {
+      console.error('fetchProjects: Erro ao buscar projetos:', error)
       setError('Erro ao buscar projetos')
-      console.error('Erro ao buscar projetos:', error)
     } finally {
       setLoading(false)
     }
   }, [user])
 
   useEffect(() => {
-    if (!isInitialized) {
+    if (!isInitialized && user) {
+      console.log('useProjects: Inicializando com user:', user)
       fetchProjects(1, '')
       setIsInitialized(true)
     }
-  }, [isInitialized])
+  }, [isInitialized, user, fetchProjects])
 
   useEffect(() => {
     if (isInitialized && (currentPage !== 1 || search !== '')) {
+      console.log('useProjects: Executando fetchProjects por mudança de página/busca')
       fetchProjects(currentPage, search)
     }
-  }, [currentPage, search, isInitialized])
+  }, [currentPage, search, isInitialized, fetchProjects])
 
   const setPage = (page: number) => {
     if (page !== currentPage) {

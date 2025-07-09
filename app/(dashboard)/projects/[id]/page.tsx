@@ -135,42 +135,46 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const saveTimeChanges = async (
-    dayKey: string,
+  // Função para atualizar um dia específico no histórico mensal
+  const updateSpecificDayTime = async (
+    dateString: string,
     newStart: string,
     newEnd: string,
     newDiscountLunch?: boolean
   ) => {
-    if (!project?.config) return;
+    if (!monthlyHistory) return;
 
     setSaving(true);
     try {
-      const updatedWorkDays = workDays?.map((wd: WorkDay) => {
-        if (wd.day === dayKey) {
-          return {
-            ...wd,
-            start: newStart,
-            end: newEnd,
-            ...(newDiscountLunch !== undefined && {
-              discountLunch: newDiscountLunch,
-            }),
-          };
-        }
-        return wd;
+      // Encontrar o registro específico deste dia
+      const dayRecord = monthlyHistory.records.find(
+        (record: { date: string }) => record.date === dateString
+      );
+
+      if (!dayRecord) {
+        console.error("Registro do dia não encontrado");
+        return;
+      }
+
+      // Atualizar apenas este dia específico
+      await axios.put(`/api/projects/${project?.id}/monthly-history`, {
+        recordId: dayRecord.id,
+        enabled: true,
+        start: newStart,
+        end: newEnd,
+        discountLunch: newDiscountLunch ?? dayRecord.discountLunch,
       });
 
-      await axios.put(`/api/projects/${project.id}/config`, {
-        hourlyRate: project.config.hourlyRate,
-        workDays: updatedWorkDays,
-      });
+      // Recarregar o histórico mensal
+      const response = await axios.get(
+        `/api/projects/${project?.id}/monthly-history?year=${currentYear}&month=${currentMonth}`
+      );
+      setMonthlyHistory(response.data);
 
-      refetch();
       setEditingDay(null);
-
-      await updateMonthlyHistory();
     } catch (error) {
-      console.error("Erro ao salvar horários:", error);
-      alert("Erro ao salvar horários");
+      console.error("Erro ao atualizar dia específico:", error);
+      alert("Erro ao atualizar horário");
     } finally {
       setSaving(false);
     }
@@ -190,8 +194,8 @@ export default function ProjectDetailPage() {
     setTempTimes({ start: "", end: "" });
   };
 
-  const confirmEditing = (dayKey: string) => {
-    saveTimeChanges(dayKey, tempTimes.start, tempTimes.end);
+  const confirmEditing = (dateString: string) => {
+    updateSpecificDayTime(dateString, tempTimes.start, tempTimes.end);
   };
 
   if (loading) {
@@ -508,14 +512,39 @@ export default function ProjectDetailPage() {
                       Sábado: "saturday",
                     };
 
+                    // Primeiro, tentar obter dados do histórico mensal específico
+                    const dateString = day.date.toISOString().split("T")[0];
+                    const monthlyRecord = monthlyHistory?.records?.find(
+                      (record) => record.date === dateString
+                    );
+
+                    // Se não houver registro mensal, usar configuração geral
                     const dayConfig = workDays?.find(
                       (wd: WorkDay) => wd.day === dayOfWeekMap[day.dayOfWeek]
                     );
 
-                    const isWorkDay = dayConfig?.enabled || false;
-                    const startTime = dayConfig?.start || "09:00";
-                    const endTime = dayConfig?.end || "17:00";
-                    const discountLunch = dayConfig?.discountLunch || false;
+                    const isWorkDay =
+                      monthlyRecord?.enabled ?? dayConfig?.enabled ?? false;
+                    const startTime =
+                      monthlyRecord?.start || dayConfig?.start || "09:00";
+                    const endTime =
+                      monthlyRecord?.end || dayConfig?.end || "17:00";
+                    const discountLunch =
+                      monthlyRecord?.discountLunch ??
+                      dayConfig?.discountLunch ??
+                      false;
+
+                    // Debug logs
+                    if (day.dayOfWeek === "Terça-feira") {
+                      console.log(`Terça ${dateString}:`, {
+                        monthlyRecord,
+                        dayConfig,
+                        isWorkDay,
+                        startTime,
+                        endTime,
+                        discountLunch,
+                      });
+                    }
 
                     const calculateDuration = (
                       start: string,
@@ -596,43 +625,11 @@ export default function ProjectDetailPage() {
                               value=""
                               onChange={async (e) => {
                                 if (e.target.value) {
-                                  // Habilitar o dia automaticamente quando preencher horário
-                                  const updatedWorkDays = workDays?.map(
-                                    (wd: WorkDay) => {
-                                      if (
-                                        wd.day === dayOfWeekMap[day.dayOfWeek]
-                                      ) {
-                                        return {
-                                          ...wd,
-                                          enabled: true,
-                                          start: e.target.value,
-                                        };
-                                      }
-                                      return wd;
-                                    }
+                                  await updateSpecificDayTime(
+                                    day.date.toISOString().split("T")[0],
+                                    e.target.value,
+                                    "17:00"
                                   );
-
-                                  if (project?.config && updatedWorkDays) {
-                                    setSaving(true);
-                                    try {
-                                      await axios.put(
-                                        `/api/projects/${project.id}/config`,
-                                        {
-                                          hourlyRate: project.config.hourlyRate,
-                                          workDays: updatedWorkDays,
-                                        }
-                                      );
-                                      refetch();
-                                      await updateMonthlyHistory();
-                                    } catch (error) {
-                                      console.error(
-                                        "Erro ao habilitar dia:",
-                                        error
-                                      );
-                                    } finally {
-                                      setSaving(false);
-                                    }
-                                  }
                                 }
                               }}
                               className="w-20"
@@ -677,42 +674,11 @@ export default function ProjectDetailPage() {
                               value=""
                               onChange={async (e) => {
                                 if (e.target.value) {
-                                  const updatedWorkDays = workDays?.map(
-                                    (wd: WorkDay) => {
-                                      if (
-                                        wd.day === dayOfWeekMap[day.dayOfWeek]
-                                      ) {
-                                        return {
-                                          ...wd,
-                                          enabled: true,
-                                          end: e.target.value,
-                                        };
-                                      }
-                                      return wd;
-                                    }
+                                  await updateSpecificDayTime(
+                                    day.date.toISOString().split("T")[0],
+                                    "07:00", // Horário padrão de início
+                                    e.target.value
                                   );
-
-                                  if (project?.config && updatedWorkDays) {
-                                    setSaving(true);
-                                    try {
-                                      await axios.put(
-                                        `/api/projects/${project.id}/config`,
-                                        {
-                                          hourlyRate: project.config.hourlyRate,
-                                          workDays: updatedWorkDays,
-                                        }
-                                      );
-                                      refetch();
-                                      await updateMonthlyHistory();
-                                    } catch (error) {
-                                      console.error(
-                                        "Erro ao habilitar dia:",
-                                        error
-                                      );
-                                    } finally {
-                                      setSaving(false);
-                                    }
-                                  }
                                 }
                               }}
                               className="w-20"
@@ -776,7 +742,9 @@ export default function ProjectDetailPage() {
                             <div className="flex gap-1">
                               <button
                                 onClick={() =>
-                                  confirmEditing(dayOfWeekMap[day.dayOfWeek])
+                                  confirmEditing(
+                                    day.date.toISOString().split("T")[0]
+                                  )
                                 }
                                 className="text-green-600 hover:text-green-800 text-sm px-2 py-1 rounded bg-green-50"
                                 disabled={saving}
