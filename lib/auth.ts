@@ -1,8 +1,6 @@
 import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/db"
-import { JWT } from "next-auth/jwt"
-import { Session, User } from "next-auth"
 
 export const authOptions = {
   providers: [
@@ -45,16 +43,18 @@ export const authOptions = {
     })
   ],
   session: {
-    strategy: "jwt",
+    strategy: "jwt" as const,
   },
   callbacks: {
-    async jwt({ token, user }: { token: JWT; user: User }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async jwt({ token, user }: any) {
       if (user) {
         token.id = user.id
       }
       return token
     },
-    async session({ session, token }: { session: Session; token: JWT }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async session({ session, token }: any) {
       if (token && session.user) {
         session.user.id = token.id as string
       }

@@ -61,7 +61,8 @@ export default function ProjectDetailPage() {
     if (project && workDays) {
       updateMonthlyHistory();
     }
-  }, [workDays]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workDays, project]);
 
   const updateMonthlyHistory = async () => {
     if (!project) return;

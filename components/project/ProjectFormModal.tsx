@@ -126,6 +126,7 @@ export function ProjectFormModal({
         workDays: defaultConfig.workDays,
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, project, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
