@@ -113,22 +113,30 @@ export function useProjects(): UseProjectsReturn {
       
       const newProject = response.data
       
-      if (currentPage === 1 && search === '') {
-        setProjects(prevProjects => {
-          const updatedProjects = [newProject, ...prevProjects]
-          return updatedProjects.slice(0, 9)
-        })
-        
-        setPagination(prev => prev ? {
-          ...prev,
-          total: prev.total + 1,
-          totalPages: Math.ceil((prev.total + 1) / 9)
-        } : null)
-      } else {
+      // Sempre atualizar a lista quando um novo projeto é criado
+      setProjects(prevProjects => {
+        const updatedProjects = [newProject, ...prevProjects]
+        return updatedProjects.slice(0, 9)
+      })
+      
+      // Atualizar paginação
+      setPagination(prev => prev ? {
+        ...prev,
+        total: prev.total + 1,
+        totalPages: Math.ceil((prev.total + 1) / 9)
+      } : null)
+      
+      // Se não estiver na primeira página ou houver busca, voltar para a primeira página
+      if (currentPage !== 1 || search !== '') {
         setCurrentPage(1)
+        setSearch('')
         lastFetchParams.current = null
-        await fetchProjects(1, search)
       }
+      
+      // Forçar um refetch para garantir sincronização
+      setTimeout(() => {
+        fetchProjects(1, '')
+      }, 100)
       
       return newProject
     } catch (error) {

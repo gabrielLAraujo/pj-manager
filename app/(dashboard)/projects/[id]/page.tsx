@@ -15,11 +15,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { listDaysCurrentToNextMonth, DayInfo } from "@/utils/dateUtils";
-import { WorkDay, MonthlyHistory } from "@/types/types";
+import { WorkDay } from "@/types/types";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
-import axios from "axios";
+import { useMonthlyHistory } from "@/hooks/useMonthlyHistory";
 
 export default function ProjectDetailPage() {
   const params = useParams();
@@ -33,35 +33,22 @@ export default function ProjectDetailPage() {
     end: "",
   });
   const [saving, setSaving] = useState(false);
-  const [monthlyHistory, setMonthlyHistory] = useState<MonthlyHistory | null>(
-    null
-  );
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
+  const { monthlyHistory, updateMonthlyHistory: updateMonthlyHistoryAPI } =
+    useMonthlyHistory({
+      projectId: project?.id || "",
+      year: currentYear,
+      month: currentMonth,
+    });
+
   console.log(workDays);
-  useEffect(() => {
-    const loadMonthlyHistory = async () => {
-      if (!project) return;
-
-      try {
-        const response = await axios.get(
-          `/api/projects/${project.id}/monthly-history?year=${currentYear}&month=${currentMonth}`
-        );
-        setMonthlyHistory(response.data);
-      } catch (error) {
-        console.error("Erro ao carregar histórico mensal:", error);
-      }
-    };
-
-    loadMonthlyHistory();
-  }, [project, currentYear, currentMonth]);
 
   useEffect(() => {
     if (project && workDays) {
       updateMonthlyHistory();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workDays, project]);
 
   const updateMonthlyHistory = async () => {
@@ -114,20 +101,18 @@ export default function ProjectDetailPage() {
         end: enabled ? end : null,
         discountLunch,
         duration,
+        year: currentYear,
+        month: currentMonth,
       };
     });
 
     try {
       setSaving(true);
-      const response = await axios.post(
-        `/api/projects/${project.id}/monthly-history`,
-        {
-          year: currentYear,
-          month: currentMonth,
-          records,
-        }
-      );
-      setMonthlyHistory(response.data);
+      await updateMonthlyHistoryAPI({
+        year: currentYear,
+        month: currentMonth,
+        records,
+      });
     } catch (error) {
       console.error("Erro ao salvar histórico mensal:", error);
     } finally {
@@ -135,7 +120,6 @@ export default function ProjectDetailPage() {
     }
   };
 
-  // Função para atualizar um dia específico no histórico mensal
   const updateSpecificDayTime = async (
     dateString: string,
     newStart: string,
@@ -146,7 +130,6 @@ export default function ProjectDetailPage() {
 
     setSaving(true);
     try {
-      // Encontrar o registro específico deste dia
       const dayRecord = monthlyHistory.records.find(
         (record: { date: string }) => record.date === dateString
       );
@@ -156,20 +139,13 @@ export default function ProjectDetailPage() {
         return;
       }
 
-      // Atualizar apenas este dia específico
-      await axios.put(`/api/projects/${project?.id}/monthly-history`, {
+      await updateMonthlyHistoryAPI({
         recordId: dayRecord.id,
         enabled: true,
         start: newStart,
         end: newEnd,
         discountLunch: newDiscountLunch ?? dayRecord.discountLunch,
       });
-
-      // Recarregar o histórico mensal
-      const response = await axios.get(
-        `/api/projects/${project?.id}/monthly-history?year=${currentYear}&month=${currentMonth}`
-      );
-      setMonthlyHistory(response.data);
 
       setEditingDay(null);
     } catch (error) {
@@ -512,13 +488,11 @@ export default function ProjectDetailPage() {
                       Sábado: "saturday",
                     };
 
-                    // Primeiro, tentar obter dados do histórico mensal específico
                     const dateString = day.date.toISOString().split("T")[0];
                     const monthlyRecord = monthlyHistory?.records?.find(
                       (record) => record.date === dateString
                     );
 
-                    // Se não houver registro mensal, usar configuração geral
                     const dayConfig = workDays?.find(
                       (wd: WorkDay) => wd.day === dayOfWeekMap[day.dayOfWeek]
                     );
@@ -709,13 +683,27 @@ export default function ProjectDetailPage() {
                                 if (project?.config && updatedWorkDays) {
                                   setSaving(true);
                                   try {
-                                    await axios.put(
+                                    // Atualizar configuração do projeto
+                                    const response = await fetch(
                                       `/api/projects/${project.id}/config`,
                                       {
-                                        hourlyRate: project.config.hourlyRate,
-                                        workDays: updatedWorkDays,
+                                        method: "PUT",
+                                        headers: {
+                                          "Content-Type": "application/json",
+                                        },
+                                        body: JSON.stringify({
+                                          hourlyRate: project.config.hourlyRate,
+                                          workDays: updatedWorkDays,
+                                        }),
                                       }
                                     );
+
+                                    if (!response.ok) {
+                                      throw new Error(
+                                        "Erro ao atualizar configuração"
+                                      );
+                                    }
+
                                     refetch();
                                   } catch (error) {
                                     console.error(

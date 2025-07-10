@@ -16,15 +16,14 @@ export default function DashboardPage() {
     setPage,
     setSearch,
     deleteProject,
+    refetch,
   } = useProjects();
 
   return (
     <div className="w-full min-h-screen">
       <Header />
       <div className="p-6">
-        {/* Barra de ações DENTRO do mesmo container da lista */}
         <div className="space-y-6">
-          {/* Ações alinhadas com a grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 items-center">
             <div className="md:col-span-1 lg:col-span-2 xl:col-span-3 2xl:col-span-4">
               <div className="flex items-center gap-4">
@@ -40,11 +39,18 @@ export default function DashboardPage() {
             </div>
 
             <div className="flex justify-end">
-              <ProjectFormModal mode="create" />
+              <ProjectFormModal
+                mode="create"
+                onProjectSaved={() => {
+                  // Forçar um refetch para garantir que os dados estejam sincronizados
+                  setTimeout(() => {
+                    refetch();
+                  }, 500);
+                }}
+              />
             </div>
           </div>
 
-          {/* Lista de projetos */}
           <ProjectList
             projects={projects}
             loading={loading}

@@ -70,7 +70,6 @@ export function ProjectList({
 
   return (
     <div className="space-y-6">
-      {/* Busca - apenas se showSearch for true */}
       {showSearch && onSearch && (
         <div className="flex justify-between items-center">
           <SearchInput onSearch={onSearch} />

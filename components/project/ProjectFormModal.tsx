@@ -44,7 +44,6 @@ export function ProjectFormModal({
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Configuração padrão para projetos
   const defaultConfig = {
     hourlyRate: 50.0,
     workDays: [
